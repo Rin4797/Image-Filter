@@ -1,3 +1,0 @@
-/Users/marinaromanova/cpp-base-hse-2022/projects/image_processor/CMakeFiles/image_processor.dir
-/Users/marinaromanova/cpp-base-hse-2022/projects/image_processor/CMakeFiles/edit_cache.dir
-/Users/marinaromanova/cpp-base-hse-2022/projects/image_processor/CMakeFiles/rebuild_cache.dir
