@@ -3,7 +3,7 @@
 #include "MatrixFilter.h"
 #include "Grayscale.h"
 
-class Edge_Detection: public Filter {
+class Edge_Detection : public Filter {
 public:
     Edge_Detection();
     Edge_Detection(float threshold);
@@ -16,4 +16,3 @@ private:
     Grayscale grayscale_;
     uint8_t threshold_;
 };
-

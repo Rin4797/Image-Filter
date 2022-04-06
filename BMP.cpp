@@ -1,141 +1,138 @@
 #include "BMP.h"
 
 BMP::BMP() {
-    type_ = 0x4d42;
-    size_ = 0;
-    offset_ = 0;
-    header_size_ = 40;
-    width_ = 0;
-    height_ = 0;
-    planes_ = 1;
-    bit_count_ = 24;
-    compression_ = 0;
-    raw_size_ = 16;
-    h_pix_per_m_ = 2835;
-    v_pix_per_m_ = 2835;
-    used_colors_ = 0;
-    important_colors_ = 0;
-    image_ = Image (0, 0);
 }
 
-void BMP::Import(const char *path) {
+Image BMP::Import(const char *path) {
+    int16_t type;
+    int32_t size;
+    int32_t offset;
+    int32_t header_size;
+    int32_t width;
+    int32_t height;
+    int16_t planes;
+    int16_t bit_count;
+    int32_t compression;
+    int32_t raw_size;
+    int32_t h_pix_per_m;
+    int32_t v_pix_per_m;
+    int32_t used_colors;
+    int32_t important_colors;
+    Image image_;
     std::ifstream input(path, std::ios::in | std::ios::binary);
     if (input.is_open()) {
-        input.read(reinterpret_cast<char *>(&type_), sizeof(type_));
-        input.read(reinterpret_cast<char *>(&size_), sizeof(size_));
+        input.read(reinterpret_cast<char *>(&type), sizeof(type));
+        input.read(reinterpret_cast<char *>(&size), sizeof(size));
         input.seekg(4, std::ios::cur);
-        input.read(reinterpret_cast<char *>(&offset_), sizeof(offset_));
-        input.read(reinterpret_cast<char *>(&header_size_), sizeof(header_size_));
-        input.read(reinterpret_cast<char *>(&width_), sizeof(width_));
-        input.read(reinterpret_cast<char *>(&height_), sizeof(height_));
-        std::cerr << "raw " << width_ << ' ' << height_ << std::endl;
-        std::cout << "Size: " << size_ << " offset: " << offset_ << " width: " << width_ << " height: " << height_
-                  << std::endl;
-        std::cout << (4 - (width_ * 3) % 4) % 4 << std::endl;
-        input.read(reinterpret_cast<char *>(&planes_), sizeof(planes_));
-        input.read(reinterpret_cast<char *>(&bit_count_), sizeof(bit_count_));
-        input.read(reinterpret_cast<char *>(&compression_), sizeof(compression_));
-        input.read(reinterpret_cast<char *>(&raw_size_), sizeof(raw_size_));
-        input.read(reinterpret_cast<char *>(&h_pix_per_m_), sizeof(h_pix_per_m_));
-        input.read(reinterpret_cast<char *>(&v_pix_per_m_), sizeof(v_pix_per_m_));
-        input.read(reinterpret_cast<char *>(&used_colors_), sizeof(used_colors_));
-        input.read(reinterpret_cast<char *>(&important_colors_), sizeof(important_colors_));
+        input.read(reinterpret_cast<char *>(&offset), sizeof(offset));
+        input.read(reinterpret_cast<char *>(&header_size), sizeof(header_size));
+        input.read(reinterpret_cast<char *>(&width), sizeof(width));
+        input.read(reinterpret_cast<char *>(&height), sizeof(height));
+        input.read(reinterpret_cast<char *>(&planes), sizeof(planes));
+        input.read(reinterpret_cast<char *>(&bit_count), sizeof(bit_count));
+        input.read(reinterpret_cast<char *>(&compression), sizeof(compression));
+        input.read(reinterpret_cast<char *>(&raw_size), sizeof(raw_size));
+        input.read(reinterpret_cast<char *>(&h_pix_per_m), sizeof(h_pix_per_m));
+        input.read(reinterpret_cast<char *>(&v_pix_per_m), sizeof(v_pix_per_m));
+        input.read(reinterpret_cast<char *>(&used_colors), sizeof(used_colors));
+        input.read(reinterpret_cast<char *>(&important_colors), sizeof(important_colors));
+        int32_t padding = ((4 - ((width * 3) % 4)) % 4);
+        if (type != 0x4d42) {
+            throw InvalidBMP("Wrong type");
+        }
+        if (size != 54 + height * (width * 3 + padding)) {
+            throw InvalidBMP("Wrong size");
+        }
+        if (offset != 54) {
+            throw InvalidBMP("Wrong offset");
+        }
+        if (header_size != 40) {
+            throw InvalidBMP("Wrong header size");
+        }
+        if (planes != 1) {
+            throw InvalidBMP("Wrong planes");
+        }
+        if (bit_count != 24) {
+            throw InvalidBMP("Wrong amount of bits");
+        }
+        if (compression != 0) {
+            throw InvalidBMP("Wrong compression");
+        }
+        if (raw_size != size - 54) {
+            throw InvalidBMP("Wrong size of data");
+        }
         Color color;
-        image_ = Image(width_, height_);
-        for (int32_t y = 0; y < height_; ++y) {
-            for (int32_t x = 0; x < width_; ++x) {
-                input.read(reinterpret_cast<char *>(&color.blue), sizeof(color.blue));
-                input.read(reinterpret_cast<char *>(&color.green), sizeof(color.green));
-                input.read(reinterpret_cast<char *>(&color.red), sizeof(color.red));
-                image_.SetColor(x, y, color);
+        image_.Resize(width, height);
+        try {
+            for (int32_t y = 0; y < height; ++y) {
+                for (int32_t x = 0; x < width; ++x) {
+                    input.read(reinterpret_cast<char *>(&color.blue), sizeof(color.blue));
+                    input.read(reinterpret_cast<char *>(&color.green), sizeof(color.green));
+                    input.read(reinterpret_cast<char *>(&color.red), sizeof(color.red));
+                    image_.SetColor(x, y, color);
+                }
+                input.seekg(padding, std::ios::cur);
             }
-            input.seekg((4 - ((width_ * 3) % 4)) % 4, std::ios::cur);
+            input.close();
+        } catch (...) {
+            throw InvalidBMP("Wrong data");
         }
-        input.close();
+    } else {
+        throw InvalidBMP("Cannot be opened for reading");
     }
-}
-
-void BMP::Export(const char *path) {
-    std::ofstream output(path, std::ios::out | std::ios::binary);
-    if (output.is_open()) {
-        std::cout << "opened file" << std::endl;
-        output.write("BM", sizeof(type_));
-        output.write(reinterpret_cast<const char*>(&size_), sizeof(size_));
-        output.write("\0\0\0\0", 4);
-        output.write(reinterpret_cast<char*>(&offset_), sizeof(offset_));
-        output.write(reinterpret_cast<char*>(&header_size_), sizeof(header_size_));
-
-        output.write(reinterpret_cast<char*>(&width_), sizeof(width_));
-        output.write(reinterpret_cast<char*>(&height_), sizeof(height_));
-
-        output.write(reinterpret_cast<char*>(&planes_), sizeof(planes_));
-        output.write(reinterpret_cast<char*>(&bit_count_), sizeof(bit_count_));
-        output.write(reinterpret_cast<char*>(&compression_), sizeof(compression_));
-        output.write(reinterpret_cast<char*>(&raw_size_), sizeof(raw_size_));
-        output.write(reinterpret_cast<char*>(&h_pix_per_m_), sizeof(h_pix_per_m_));
-        output.write(reinterpret_cast<char*>(&v_pix_per_m_), sizeof(v_pix_per_m_));
-        output.write(reinterpret_cast<char*>(&used_colors_), sizeof(used_colors_));
-        output.write(reinterpret_cast<char*>(&important_colors_), sizeof(important_colors_));
-        uint8_t padding_color = 0;
-        size_t padding_size = (4 - ((width_ * 3) % 4)) % 4;
-        for (int32_t y = 0; y < height_; ++y) {
-            for (int32_t x = 0; x < width_; ++x) {
-                Color color = image_.GetColor(x, y);
-                output.write(reinterpret_cast<char*>(&color.blue), sizeof(color.blue));
-                output.write(reinterpret_cast<char*>(&color.green), sizeof(color.green));
-                output.write(reinterpret_cast<char*>(&color.red), sizeof(color.red));
-            }
-            for (size_t id = 0; id < padding_size; ++id) {
-                output.write(reinterpret_cast<char*>(&padding_color), sizeof(padding_color));
-            }
-        }
-        output.close();
-    }
-}
-
-Image BMP::ImportedImage() {
     return image_;
 }
 
-void BMP::ImportImage(Image new_image) {
-    type_ = 0x4d42;
-    size_ = 54 + new_image.GetHeight() * (new_image.GetWidth() * 3 + ((4 - ((new_image.GetWidth() * 3) % 4) % 4)));
-    offset_ = 54;
-    header_size_ = 40;
-    width_ = new_image.GetWidth();
-    height_ = new_image.GetHeight();
-    planes_ = 1;
-    bit_count_ = 24;
-    compression_ = 0;
-    raw_size_ = size_ - 54;
-    h_pix_per_m_ = 2835;
-    v_pix_per_m_ = 2835;
-    used_colors_ = 0;
-    important_colors_ = 0;
-    image_ = new_image;
-}
+void BMP::Export(const char *path, Image image_) {
+    int32_t padding = image_.GetHeight() * (image_.GetWidth() * 3 + ((4 - ((image_.GetWidth() * 3) % 4)) % 4));
+    int16_t type = 0x4d42;
+    int32_t size = 54 + padding;
+    int32_t offset = 54;
+    int32_t header_size = 40;
+    int32_t width = image_.GetWidth();
+    int32_t height = image_.GetHeight();
+    int16_t planes = 1;
+    int16_t bit_count = 24;
+    int32_t compression = 0;
+    int32_t raw_size = size - 54;
+    int32_t h_pix_per_m = 2835;
+    int32_t v_pix_per_m = 2835;
+    int32_t used_colors = 0;
+    int32_t important_colors = 0;
+    std::ofstream output(path, std::ios::out | std::ios::binary);
+    if (output.is_open()) {
+        output.write("BM", sizeof(type));
+        output.write(reinterpret_cast<const char *>(&size), sizeof(size));
+        output.write("\0\0\0\0", 4);
+        output.write(reinterpret_cast<char *>(&offset), sizeof(offset));
+        output.write(reinterpret_cast<char *>(&header_size), sizeof(header_size));
 
-std::ostream &operator<<(std::ostream &out, const BMP &bmp) {
-    out << "type: " << bmp.type_ << std::endl;
-    out << "size: " <<  bmp.size_ << std::endl;
-    out << "offset: " << bmp.offset_ << std::endl;
-    out << "header_size: " << bmp.header_size_ << std::endl;
-    out << "width: " << bmp.width_ << std::endl;
-    out << "height: " << bmp.height_ << std::endl;
-    out << "planes: " << bmp.planes_ << std::endl;
-    out << "bit_count: " << bmp.bit_count_ << std::endl;
-    out << "compression: " << bmp.compression_ << std::endl;
-    out << "raw_size: " << bmp.raw_size_ << std::endl;
-    out << "h_pix_per_m: " << bmp.h_pix_per_m_ << std::endl;
-    out << "v_pix_per_m: " << bmp.v_pix_per_m_ << std::endl;
-    out << "used_colors: " << bmp.used_colors_ << std::endl;
-    out << "important_colors: " << bmp.important_colors_ << std::endl;
-    out << "image:" << std::endl;
-    for (int32_t y = 0; y < bmp.height_; ++y) {
-        for (int32_t x = 0; x < bmp.width_; ++x) {
-            out << bmp.image_.GetColorValue(x, y) << "    ";
+        output.write(reinterpret_cast<char *>(&width), sizeof(width));
+        output.write(reinterpret_cast<char *>(&height), sizeof(height));
+
+        output.write(reinterpret_cast<char *>(&planes), sizeof(planes));
+        output.write(reinterpret_cast<char *>(&bit_count), sizeof(bit_count));
+        output.write(reinterpret_cast<char *>(&compression), sizeof(compression));
+        output.write(reinterpret_cast<char *>(&raw_size), sizeof(raw_size));
+        output.write(reinterpret_cast<char *>(&h_pix_per_m), sizeof(h_pix_per_m));
+        output.write(reinterpret_cast<char *>(&v_pix_per_m), sizeof(v_pix_per_m));
+        output.write(reinterpret_cast<char *>(&used_colors), sizeof(used_colors));
+        output.write(reinterpret_cast<char *>(&important_colors), sizeof(important_colors));
+        uint8_t padding_color = 0;
+        size_t padding_size = (4 - ((width * 3) % 4)) % 4;
+        for (int32_t y = 0; y < height; ++y) {
+            for (int32_t x = 0; x < width; ++x) {
+                Color color = image_.GetColor(x, y);
+                output.write(reinterpret_cast<char *>(&color.blue), sizeof(color.blue));
+                output.write(reinterpret_cast<char *>(&color.green), sizeof(color.green));
+                output.write(reinterpret_cast<char *>(&color.red), sizeof(color.red));
+            }
+            for (size_t id = 0; id < padding_size; ++id) {
+                output.write(reinterpret_cast<char *>(&padding_color), sizeof(padding_color));
+            }
         }
-        out << std::endl;
+        output.close();
+    } else {
+        throw InvalidBMP("Cannot be opened for writing");
     }
-    return out;
 }

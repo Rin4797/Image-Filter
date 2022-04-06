@@ -2,12 +2,12 @@
 
 #include "Filter.h"
 
-class GaussianBlur: public Filter {
+class GaussianBlur : public Filter {
 public:
     GaussianBlur();
-    void SetSigma(float sigma);
+    void SetSigma(double sigma);
     Image Apply(Image& image) override;
 
 private:
-    float sigma_;
+    double sigma_;
 };

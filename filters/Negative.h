@@ -2,7 +2,7 @@
 
 #include "Filter.h"
 
-class Negative: public Filter {
+class Negative : public Filter {
 public:
     Negative();
     Image Apply(Image &image) override;

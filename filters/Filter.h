@@ -12,7 +12,5 @@ public:
 
     ~Filter() = default;
 
-    friend class MatrixFilter;
-    friend class Crop;
 private:
 };

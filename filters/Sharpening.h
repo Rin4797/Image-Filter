@@ -5,8 +5,4 @@
 class Sharpening : public MatrixFilter {
 public:
     Sharpening();
-
-private:
 };
-
-

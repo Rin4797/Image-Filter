@@ -1,11 +1,14 @@
 #pragma once
 
 #include "Filter.h"
+#include "../Exception.h"
 
-class Crop: public Filter{
+#include <exception>
+
+class Crop : public Filter {
 public:
     Crop();
-    Crop(int32_t height, int32_t width);
+    Crop(int32_t width, int32_t height);
     void SetParameters(int32_t width, int32_t height);
     Image Apply(Image& image) override;
 
